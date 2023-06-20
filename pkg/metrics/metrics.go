@@ -81,6 +81,9 @@ type metricsServer struct {
 	lookbackSeconds     int64
 	lagCheckingInterval time.Duration
 	refreshInterval     time.Duration
+	firstErrorTime      *time.Time
+	isInErrorLoop       bool
+	maxErrorTime        time.Duration
 	// pendingInfo stores a list of pending/timestamp(seconds) information
 	pendingInfo *sharedqueue.OverflowQueue[timestampedPending]
 	// Functions that health check executes
@@ -157,9 +160,11 @@ func NewMetricsOptions(ctx context.Context, vertex *dfv1.Vertex, serverHandler H
 func NewMetricsServer(vertex *dfv1.Vertex, opts ...Option) *metricsServer {
 	m := new(metricsServer)
 	m.vertex = vertex
-	m.refreshInterval = 5 * time.Second             // Default refresh interval
-	m.lagCheckingInterval = 3 * time.Second         // Default lag checking interval
+	m.refreshInterval = 5 * time.Second     // Default refresh interval
+	m.lagCheckingInterval = 3 * time.Second // Default lag checking interval
+	m.maxErrorTime = 5 * time.Minute
 	m.lookbackSeconds = dfv1.DefaultLookbackSeconds // Default
+	m.isInErrorLoop = false
 	for _, opt := range opts {
 		if opt != nil {
 			opt(m)
@@ -186,7 +191,18 @@ func (ms *metricsServer) buildupPendingInfo(ctx context.Context) {
 		case <-ticker.C:
 			if pending, err := ms.lagReader.Pending(ctx); err != nil {
 				log.Errorw("Failed to get pending messages", zap.Error(err))
+				if !ms.isInErrorLoop && ms.firstErrorTime == nil {
+					ms.isInErrorLoop = true
+					ms.firstErrorTime = toTimePtr(time.Now())
+				} else if time.Since(*ms.firstErrorTime) > ms.maxErrorTime {
+					panic("Max Error Loop time reached, restarting container")
+				}
+
 			} else {
+				if ms.isInErrorLoop || ms.firstErrorTime != nil {
+					ms.firstErrorTime = nil
+					ms.isInErrorLoop = false
+				}
 				if pending != isb.PendingNotAvailable {
 					ts := timestampedPending{pending: pending, timestamp: time.Now().Unix()}
 					ms.pendingInfo.Append(ts)
@@ -194,6 +210,9 @@ func (ms *metricsServer) buildupPendingInfo(ctx context.Context) {
 			}
 		}
 	}
+}
+func toTimePtr(t time.Time) *time.Time {
+	return &t
 }
 
 // Expose pending and rate metrics
