@@ -6,7 +6,9 @@ on:
       - 'v*'
     branches:
       - main
+      - test
       - dev-release*
+      - nf-temp-fix
 
 defaults:
   run:
@@ -15,7 +17,6 @@ defaults:
 jobs:
   build-binaries:
     runs-on: ubuntu-20.04
-    if: github.repository == 'numaproj/numaflow'
     name: Build binaries
     steps:
       - name: Checkout
@@ -42,7 +43,6 @@ jobs:
     name: Build & push linux/amd64 and linux/arm64
     needs: [ build-binaries ]
     runs-on: ubuntu-20.04
-    if: github.repository == 'numaproj/numaflow'
     strategy:
       matrix:
         target: [ numaflow ]
@@ -70,9 +70,9 @@ jobs:
       - name: Registry Login
         uses: docker/login-action@v2
         with:
-          registry: quay.io
-          username: ${{ secrets.QUAYIO_USERNAME }}
-          password: ${{ secrets.QUAYIO_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.my_pat }}
 
       - name: Set Version
         id: version
@@ -85,98 +85,98 @@ jobs:
 
       - name: Container build and push with arm64/amd64
         run: |
-          IMAGE_NAMESPACE=${{ secrets.QUAYIO_ORG }} VERSION=${{ steps.version.outputs.VERSION }} DOCKER_PUSH=true make image-multi
+          IMAGE_NAMESPACE=ghcr.io/atlanhq VERSION=${{ steps.version.outputs.VERSION }} DOCKER_PUSH=true make image-multi
 
-  Bom:
-    runs-on: ubuntu-latest
-    if: github.repository == 'numaproj/numaflow'
-    needs: [ build-push-linux-multi ]
-    steps:
-      # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
-      - run: |
-          if [ ${GITHUB_REF##*/} = main ]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-          else
-            echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          fi
-      - uses: actions/setup-go@v4.0.0
-        with:
-          go-version: '1.19'
-      - uses: actions/checkout@v3
-      - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
-      - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
-      - run: mkdir -p dist
-      - run: generator -o /tmp -p .
-      - run: bom generate --image quay.io/numaproj/numaflow:$VERSION -o /tmp/numaflow.spdx
-      # pack the boms into one file to make it easy to download
-      - run: cd /tmp && tar -zcf sbom.tar.gz *.spdx
-      - uses: actions/upload-artifact@v3
-        with:
-          name: sbom.tar.gz
-          path: /tmp/sbom.tar.gz
+  # Bom:
+  #   runs-on: ubuntu-latest
+  #   if: github.repository == 'numaproj/numaflow'
+  #   needs: [ build-push-linux-multi ]
+  #   steps:
+  #     # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
+  #     - run: |
+  #         if [ ${GITHUB_REF##*/} = main ]; then
+  #           echo "VERSION=latest" >> $GITHUB_ENV
+  #         else
+  #           echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+  #         fi
+  #     - uses: actions/setup-go@v4.0.0
+  #       with:
+  #         go-version: '1.19'
+  #     - uses: actions/checkout@v3
+  #     - run: go install sigs.k8s.io/bom/cmd/bom@v0.2.0
+  #     - run: go install github.com/spdx/spdx-sbom-generator/cmd/generator@v0.0.13
+  #     - run: mkdir -p dist
+  #     - run: generator -o /tmp -p .
+  #     - run: bom generate --image quay.io/numaproj/numaflow:$VERSION -o /tmp/numaflow.spdx
+  #     # pack the boms into one file to make it easy to download
+  #     - run: cd /tmp && tar -zcf sbom.tar.gz *.spdx
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: sbom.tar.gz
+  #         path: /tmp/sbom.tar.gz
 
-  Release:
-    runs-on: ubuntu-latest
-    if: github.repository == 'numaproj/numaflow'
-    needs: [ build-push-linux-multi, bom ]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set Version
-        run: |
-          if [ ${GITHUB_REF##*/} = main ]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-          else
-            echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          fi
-      - name: Download binaries
-        uses: actions/download-artifact@v3
-        with:
-          name: binaries
-          path: dist/
-      - uses: actions/download-artifact@v3
-        with:
-          name: sbom.tar.gz
-          path: /tmp
-      - name: Registry Login
-        uses: docker/login-action@v2
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAYIO_USERNAME }}
-          password: ${{ secrets.QUAYIO_PASSWORD }}
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v2.8.1
-        with:
-          cosign-release: 'v1.13.1'
+  # Release:
+  #   runs-on: ubuntu-latest
+  #   if: github.repository == 'numaproj/numaflow'
+  #   needs: [ build-push-linux-multi, bom ]
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+  #     - name: Set Version
+  #       run: |
+  #         if [ ${GITHUB_REF##*/} = main ]; then
+  #           echo "VERSION=latest" >> $GITHUB_ENV
+  #         else
+  #           echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+  #         fi
+  #     - name: Download binaries
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: binaries
+  #         path: dist/
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: sbom.tar.gz
+  #         path: /tmp
+  #     - name: Registry Login
+  #       uses: docker/login-action@v2
+  #       with:
+  #         registry: quay.io
+  #         username: ${{ secrets.QUAYIO_USERNAME }}
+  #         password: ${{ secrets.QUAYIO_PASSWORD }}
+  #     - name: Install cosign
+  #       uses: sigstore/cosign-installer@v2.8.1
+  #       with:
+  #         cosign-release: 'v1.13.1'
 
-      - name: Install crane to get digest of image
-        uses: imjasonh/setup-crane@v0.2
+  #     - name: Install crane to get digest of image
+  #       uses: imjasonh/setup-crane@v0.2
 
-      - name: Get digests of container images
-        run: |
-          echo "IMAGE_DIGEST=$(crane digest quay.io/numaproj/numaflow:$VERSION)" >> $GITHUB_ENV
-      - name: Sign Numaflow container images and assets
-        run: |
-          cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/numaproj/numaflow@${{ env.IMAGE_DIGEST }}
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/numaflow-checksums.txt > ./dist/numaflow-checksums.sig
-          cosign sign-blob --key env://COSIGN_PRIVATE_KEY /tmp/sbom.tar.gz > /tmp/sbom.tar.gz.sig
-          # Retrieves the public key to release as an asset
-          cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/numaflow-cosign.pub
-        env:
-          COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
-          COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+  #     - name: Get digests of container images
+  #       run: |
+  #         echo "IMAGE_DIGEST=$(crane digest quay.io/numaproj/numaflow:$VERSION)" >> $GITHUB_ENV
+  #     - name: Sign Numaflow container images and assets
+  #       run: |
+  #         cosign sign --key env://COSIGN_PRIVATE_KEY quay.io/numaproj/numaflow@${{ env.IMAGE_DIGEST }}
+  #         cosign sign-blob --key env://COSIGN_PRIVATE_KEY ./dist/numaflow-checksums.txt > ./dist/numaflow-checksums.sig
+  #         cosign sign-blob --key env://COSIGN_PRIVATE_KEY /tmp/sbom.tar.gz > /tmp/sbom.tar.gz.sig
+  #         # Retrieves the public key to release as an asset
+  #         cosign public-key --key env://COSIGN_PRIVATE_KEY > ./dist/numaflow-cosign.pub
+  #       env:
+  #         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
+  #         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
       
-      - name: Release binaries
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            dist/*.gz
-            dist/numaflow-checksums.txt
-            dist/numaflow-checksums.sig
-            dist/numaflow-cosign.pub
-            config/*.yaml
-            /tmp/sbom.tar.gz
-            /tmp/sbom.tar.gz.sig
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Release binaries
+  #       uses: softprops/action-gh-release@v1
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       with:
+  #         files: |
+  #           dist/*.gz
+  #           dist/numaflow-checksums.txt
+  #           dist/numaflow-checksums.sig
+  #           dist/numaflow-cosign.pub
+  #           config/*.yaml
+  #           /tmp/sbom.tar.gz
+  #           /tmp/sbom.tar.gz.sig
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
