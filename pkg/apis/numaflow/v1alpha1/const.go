@@ -165,8 +165,8 @@ var (
 	// the standard resources used by the `init` and `main`containers.
 	standardResources = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
-			"cpu":    resource.MustParse("100m"),
-			"memory": resource.MustParse("128Mi"),
+			"cpu":    resource.MustParse("10m"),
+			"memory": resource.MustParse("50Mi"),
 		},
 	}
 )

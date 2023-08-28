@@ -9,6 +9,7 @@ on:
       - test
       - 081
       - dev-release*
+      - plt-1827-081-beta
 
 defaults:
   run:
