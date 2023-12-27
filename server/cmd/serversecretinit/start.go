@@ -53,7 +53,7 @@ func Start() error {
 
 	k8sSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(context.Background(), secret, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get kubesecret in namespace %s, %w", namespace, err)
 	}
 
 	_, secretKeyExists = k8sSecret.Data[serverSecretKey]
