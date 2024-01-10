@@ -161,18 +161,23 @@ func (p Pipeline) GetAllBuckets() []string {
 
 // GetDownstreamEdges returns all the downstream edges of a vertex
 func (p Pipeline) GetDownstreamEdges(vertexName string) []Edge {
-	var f func(vertexName string, edges *[]Edge)
-	f = func(vertexName string, edges *[]Edge) {
-		for _, b := range p.ListAllEdges() {
-			if b.From == vertexName {
-				*edges = append(*edges, b)
-				f(b.To, edges)
-			}
+    var f func(vertexName string, edges *[]Edge, visited *map[string]bool)
+    f = func(vertexName string, edges *[]Edge, visited *map[string]bool) {
+        if (*visited)[vertexName] {
+			return
 		}
-	}
-	result := []Edge{}
-	f(vertexName, &result)
-	return result
+        for _, b := range p.ListAllEdges() {
+            if b.From == vertexName {
+                *edges = append(*edges, b)
+                (*visited)[vertexName] = true
+				f(b.To, edges, visited)
+            }
+        }
+    }
+    result := []Edge{}
+    visited := make(map[string]bool)
+    f(vertexName, &result, &visited)
+    return result
 }
 
 // HasSideInputs returns if the pipeline has side inputs.

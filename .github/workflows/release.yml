@@ -7,7 +7,7 @@ on:
     branches:
       - main
       - test
-      - 112
+      - 112-cycle-patch
       - dev-release*
 
 defaults:
