@@ -207,7 +207,14 @@ func (j JetStreamBufferService) GetStatefulSetSpec(req GetJetStreamStatefulSetSp
 				StartupProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
-							Path: "/healthz",
+							// js-server-only skips the health check of accounts,
+							// streams and consumers. Bare /healthz requires every
+							// stream and consumer to be current, which a server
+							// recovering a large asset count cannot satisfy inside
+							// this probe's 10 + 10*30 = 310s budget. The kubelet
+							// then kills it mid-recovery, and repeated kills leave
+							// the filestore inconsistent.
+							Path: "/healthz?js-server-only=true",
 							Port: intstr.FromInt(int(req.MonitorPort)),
 						},
 					},

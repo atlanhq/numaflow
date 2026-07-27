@@ -77,6 +77,21 @@ func TestJetStreamGetStatefulSetSpec(t *testing.T) {
 		assert.True(t, len(spec.VolumeClaimTemplates) > 0)
 	})
 
+	// Pins the startup probe to the JetStream-tolerant health endpoint. Bare
+	// /healthz requires every stream and consumer to report current, which a
+	// server recovering a large asset count cannot satisfy inside the probe's
+	// 10 + 10*30 = 310s budget; the kubelet then kills it mid-recovery and
+	// repeated kills leave the filestore inconsistent. Asserted so that a merge
+	// from upstream cannot revert it silently.
+	t.Run("startup probe skips per-asset JetStream health checks", func(t *testing.T) {
+		s := &JetStreamBufferService{}
+		spec := s.GetStatefulSetSpec(req)
+		probe := spec.Template.Spec.Containers[0].StartupProbe
+		assert.NotNil(t, probe)
+		assert.Equal(t, "/healthz?js-server-only=true", probe.HTTPGet.Path)
+		assert.Equal(t, int32(2341), probe.HTTPGet.Port.IntVal)
+	})
+
 	t.Run("with tls", func(t *testing.T) {
 		s := &JetStreamBufferService{
 			TLS: true,
