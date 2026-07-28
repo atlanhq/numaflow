@@ -204,6 +204,18 @@ func (j JetStreamBufferService) GetStatefulSetSpec(req GetJetStreamStatefulSetSp
 					{Name: "config-volume", MountPath: "/etc/nats-config"},
 					{Name: "pid", MountPath: "/var/run/nats"},
 				},
+				// The monitoring port is bound before JetStream store recovery, but
+				// the client and route listeners are bound only after it finishes.
+				// /healthz calls readyForConnections() unconditionally and reports
+				// "server, route" as not ready for the whole of recovery - no query
+				// parameter skips that check. So this probe's budget is a hard cap
+				// on how long recovery may take, and exceeding it means the kubelet
+				// kills the server mid-recovery. Repeated kills leave the filestore
+				// inconsistent, which makes the next recovery slower still, so a
+				// budget that is merely usually-enough turns a slow start into an
+				// unrecoverable spiral. Killing a JetStream node mid-recovery is far
+				// more damaging than waiting for it, hence a deliberately generous
+				// 10 + 10*180 = 1810s.
 				StartupProbe: &corev1.Probe{
 					ProbeHandler: corev1.ProbeHandler{
 						HTTPGet: &corev1.HTTPGetAction{
@@ -211,8 +223,9 @@ func (j JetStreamBufferService) GetStatefulSetSpec(req GetJetStreamStatefulSetSp
 							Port: intstr.FromInt32(req.MonitorPort),
 						},
 					},
-					FailureThreshold:    30,
+					FailureThreshold:    180,
 					InitialDelaySeconds: 10,
+					PeriodSeconds:       10,
 					TimeoutSeconds:      5,
 				},
 				LivenessProbe: &corev1.Probe{

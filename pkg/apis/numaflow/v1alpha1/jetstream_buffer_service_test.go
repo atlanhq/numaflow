@@ -77,6 +77,25 @@ func TestJetStreamGetStatefulSetSpec(t *testing.T) {
 		assert.True(t, len(spec.VolumeClaimTemplates) > 0)
 	})
 
+	// The startup probe's budget caps how long JetStream store recovery may take,
+	// because /healthz reports not-ready until the client and route listeners are
+	// bound, which happens only after recovery completes. Exceeding it means the
+	// kubelet kills the server mid-recovery, which corrupts the filestore and makes
+	// the next recovery slower. Asserted so the budget cannot be narrowed silently
+	// by a merge from upstream.
+	t.Run("startup probe allows a long JetStream recovery", func(t *testing.T) {
+		s := &JetStreamBufferService{}
+		spec := s.GetStatefulSetSpec(req)
+		probe := spec.Template.Spec.Containers[0].StartupProbe
+		assert.NotNil(t, probe)
+		// PeriodSeconds must be set explicitly: left at zero the struct implies no
+		// budget at all and only the API server's default of 10 makes it finite,
+		// which hides the arithmetic from anyone reading this spec.
+		assert.NotZero(t, probe.PeriodSeconds, "PeriodSeconds must be explicit, not defaulted")
+		budget := probe.InitialDelaySeconds + probe.PeriodSeconds*probe.FailureThreshold
+		assert.GreaterOrEqual(t, budget, int32(1800), "startup budget must allow a slow store recovery")
+	})
+
 	t.Run("with tls", func(t *testing.T) {
 		s := &JetStreamBufferService{
 			TLS: true,

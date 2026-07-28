@@ -21,6 +21,11 @@ fi
 build_aarch64() {
     apt install -y gcc-aarch64-linux-gnu
     sed -i "/^targets = \[/d" rust-toolchain.toml
+    # Without this, rustup never installs the aarch64 std and the build dies with
+    # "can't find crate for `core`". build_x86_64 below appends the equivalent
+    # line; the trailing sed here only makes sense if it was written, so the
+    # omission was an oversight rather than intent.
+    echo "targets = ['aarch64-unknown-linux-gnu']" >> rust-toolchain.toml
     RUSTFLAGS='-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc' cargo build --release --target aarch64-unknown-linux-gnu
     sed -i "/targets = \['aarch64-unknown-linux-gnu'\]/d" rust-toolchain.toml
 }
