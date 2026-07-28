@@ -63,7 +63,7 @@ jobs:
           echo "tag=${tag}"                                                      >>"$GITHUB_OUTPUT"
           echo "image=${REGISTRY_NAMESPACE}/numaflow:${tag}"                      >>"$GITHUB_OUTPUT"
         env:
-          REGISTRY_NAMESPACE: ghcr.io/${{ github.repository_owner }}/pr-builds
+          REGISTRY_NAMESPACE: ghcr.io/${{ github.repository_owner }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -83,7 +83,7 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.ORG_PAT_GITHUB }}
         run: |
           if [ -z "${REGISTRY_PASSWORD:-}" ]; then
-            echo "::error::secrets.ORG_PAT_GITHUB is empty or not exposed to this repository. Set it, or switch this step and the login below to a secret that exists (this repo has MY_PAT), or revert to secrets.GITHUB_TOKEN which works for the pr-builds namespace."
+            echo "::error::secrets.ORG_PAT_GITHUB is empty or not exposed to this repository. Set it, or switch this step and the login below to a secret that exists (this repo has MY_PAT), or revert to secrets.GITHUB_TOKEN, which cannot write ghcr.io/<owner>/numaflow and needs IMAGE_NAMESPACE pointed at a repo-owned path such as ghcr.io/<owner>/pr-builds."
             exit 1
           fi
 
@@ -103,16 +103,17 @@ jobs:
       - name: Build and push multi-arch image
         run: make image-multi
         env:
-          # Deliberately NOT ghcr.io/<owner>/numaflow. That package predates this
-          # workflow and was created outside this repository, so it is not linked
-          # to it, and `packages: write` only grants write to packages the repo
-          # owns - pushing there fails with a 403 on the blob HEAD request. A
-          # nested path creates a new package owned by this repo, which also keeps
-          # experimental PR builds out of the production image repository.
-          # The Makefile composes $(IMAGE_NAMESPACE)/$(BINARY_NAME), and
-          # BINARY_NAME is load-bearing for the dist/ binary paths, so the
-          # namespace is where the separation has to happen.
-          IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}/pr-builds
+          # Publishes to the same package the released images live in. This only
+          # works because the login above uses an org PAT: ghcr.io/<owner>/numaflow
+          # predates this workflow and was created outside this repository, so it
+          # is not linked to it, and the repo-scoped GITHUB_TOKEN gets a 403 on the
+          # blob HEAD request no matter what `packages: write` says.
+          #
+          # Per-PR tags therefore sit alongside released ones in a single package.
+          # The tag itself is what keeps them distinguishable - see the tag format
+          # above - so nothing here is ambiguous, but a reader browsing tags will
+          # see unmerged builds among them.
+          IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
           VERSION: ${{ steps.meta.outputs.tag }}
           DOCKER_PUSH: "true"
           # DOCKER_BUILD_ARGS is interpolated straight into the buildx invocation,
@@ -142,6 +143,6 @@ jobs:
             echo
             echo "Deploy with:"
             echo '```'
-            echo "kubectl set image -n numaflow deploy/numaflow-controller-deploy numaflow=${{ steps.meta.outputs.image }}"
+            echo "kubectl set image -n numaflow deploy/numaflow-controller-deploy controller-manager=${{ steps.meta.outputs.image }}"
             echo '```'
           } >>"$GITHUB_STEP_SUMMARY"
