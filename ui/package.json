@@ -37,7 +37,7 @@
     "react-dom": "^18.0.0",
     "react-highlight-words": "^0.18.0",
     "react-json-view": "^1.21.3",
-    "react-router-dom": "6",
+    "react-router-dom": "6.30.6",
     "react-test-renderer": "^18.0.0",
     "react-toastify": "^9.1.1",
     "reactflow": "^11.5.5",
