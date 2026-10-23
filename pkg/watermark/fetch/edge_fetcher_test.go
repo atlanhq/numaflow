@@ -1015,7 +1015,7 @@ func TestFetcherWithSameOTBucketWithSinglePartition(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	// connect to NATS
-	nc := natsclient.NewTestClientWithServer(t, s)
+	nc := natsclient.NewTestClient(t, s.ClientURL())
 	defer nc.Close()
 
 	// create JetStream Context
@@ -1052,7 +1052,7 @@ func TestFetcherWithSameOTBucketWithSinglePartition(t *testing.T) {
 	defer func() { _ = js.DeleteKeyValue(keyspace + "_OT") }()
 	assert.NoError(t, err)
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 
 	// create hbStore
@@ -1312,7 +1312,7 @@ func TestFetcherWithSameOTBucketWithMultiplePartition(t *testing.T) {
 	defer cancel()
 
 	// connect to NATS
-	nc := natsclient.NewTestClientWithServer(t, s)
+	nc := natsclient.NewTestClient(t, s.ClientURL())
 	defer nc.Close()
 
 	// create JetStream Context
@@ -1349,7 +1349,7 @@ func TestFetcherWithSameOTBucketWithMultiplePartition(t *testing.T) {
 	defer func() { _ = js.DeleteKeyValue(keyspace + "_OT") }()
 	assert.NoError(t, err)
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 
 	// create hbStore

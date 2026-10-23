@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"context"
+
 	evictCache "github.com/hashicorp/golang-lru/v2/expirable"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	dfv1 "github.com/numaproj/numaflow/pkg/apis/numaflow/v1alpha1"

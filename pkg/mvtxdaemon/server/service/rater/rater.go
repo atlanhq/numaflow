@@ -22,9 +22,10 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/numaproj/numaflow/pkg/apis/numaflow/v1alpha1"
