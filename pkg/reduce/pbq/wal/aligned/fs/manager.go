@@ -51,7 +51,7 @@ func NewFSManager(vertexInstance *dfv1.VertexInstance, opts ...Option) wal.Manag
 		maxBatchSize: dfv1.DefaultWALMaxSyncSize,
 		syncDuration: dfv1.DefaultWALSyncDuration,
 		pipelineName: vertexInstance.Vertex.Spec.PipelineName,
-		vertexName:   vertexInstance.Vertex.Spec.Name,
+		vertexName:   vertexInstance.Vertex.Spec.AbstractVertex.Name,
 		replicaIndex: vertexInstance.Replica,
 		activeWals:   make(map[string]wal.WAL),
 	}

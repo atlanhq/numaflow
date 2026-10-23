@@ -814,7 +814,7 @@ func buildISBBatchJob(pl *dfv1.Pipeline, image string, isbSvcConfig dfv1.BufferS
 		if jt.BackoffLimit != nil {
 			spec.BackoffLimit = jt.BackoffLimit
 		}
-		jt.ApplyToPodTemplateSpec(&spec.Template)
+		jt.AbstractPodTemplate.ApplyToPodTemplateSpec(&spec.Template)
 		if jt.ContainerTemplate != nil {
 			jt.ContainerTemplate.ApplyToNumaflowContainers(spec.Template.Spec.Containers)
 		}

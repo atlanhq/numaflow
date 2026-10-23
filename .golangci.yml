@@ -1,8 +1,23 @@
-# golangci-lint v2 config. Uses the v2 default linters with the exclusion
-# presets that correspond to golangci-lint v1's default exclusions, which this
-# repo was linted with before, plus goimports.
+# golangci-lint v2 config reproducing the v1.61 defaults this repo was linted with:
+# default linters, v1's default exclusion rules, and goimports. Checks that v1 did not
+# run by default are turned off: staticcheck quick-fixes (QF*, formerly gopls-only) and
+# go vet's inline analyzer (new in Go 1.26).
 version: "2"
 linters:
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+        - -ST1003
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
+        - -QF*
+    govet:
+      disable:
+        - inline
   exclusions:
     presets:
       - comments

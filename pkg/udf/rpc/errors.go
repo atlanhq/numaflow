@@ -38,7 +38,7 @@ func (e *ApplyUDFErr) IsUserUDFErr() bool {
 
 // IsInternalErr is true if this is a platform issue. This is a blocking error.
 func (e *ApplyUDFErr) IsInternalErr() bool {
-	return e.Flag
+	return e.InternalErr.Flag
 }
 
 func (e *ApplyUDFErr) Error() string {

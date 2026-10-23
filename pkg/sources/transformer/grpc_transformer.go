@@ -87,8 +87,8 @@ func (u *GRPCBasedTransformer) ApplyTransform(ctx context.Context, messages []*i
 		req := &v1.SourceTransformRequest{
 			Request: &v1.SourceTransformRequest_Request{
 				Keys:      msg.Keys,
-				Value:     msg.Payload,
-				EventTime: timestamppb.New(msg.EventTime),
+				Value:     msg.Body.Payload,
+				EventTime: timestamppb.New(msg.MessageInfo.EventTime),
 				Watermark: timestamppb.New(msg.Watermark),
 				Headers:   msg.Headers,
 				Id:        id,
@@ -121,7 +121,7 @@ func (u *GRPCBasedTransformer) ApplyTransform(ctx context.Context, messages []*i
 			keys := result.Keys
 			if result.EventTime != nil {
 				// Transformer supports changing event time.
-				parentMessage.EventTime = result.EventTime.AsTime()
+				parentMessage.MessageInfo.EventTime = result.EventTime.AsTime()
 			}
 			taggedMessage := &isb.WriteMessage{
 				Message: isb.Message{

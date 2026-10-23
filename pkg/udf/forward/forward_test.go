@@ -1151,7 +1151,7 @@ func TestNewInterStepDataForwardIdleWatermark(t *testing.T) {
 	}
 	for idx, msg := range to1.GetMessages(4) {
 		assert.Equal(t, wantKind[idx], msg.Kind)
-		assert.Equal(t, wantBody[idx], len(msg.Payload) > 0)
+		assert.Equal(t, wantBody[idx], len(msg.Body.Payload) > 0)
 	}
 
 	// stop will cancel the contexts and therefore the forwarder stops without waiting
@@ -1312,7 +1312,7 @@ func TestNewInterStepDataForwardIdleWatermark_Reset(t *testing.T) {
 	}
 	for idx, msg := range to1.GetMessages(4) {
 		assert.Equal(t, wantKind[idx], msg.Kind)
-		assert.Equal(t, wantBody[idx], len(msg.Payload) > 0)
+		assert.Equal(t, wantBody[idx], len(msg.Body.Payload) > 0)
 	}
 
 	// stop will cancel the contexts and therefore the forwarder stops without waiting
@@ -1354,7 +1354,7 @@ func (f mySourceForwardTest) ApplyMap(ctx context.Context, readMessages []*isb.R
 	for _, readMessage := range readMessages {
 		_ = ctx
 		offset := readMessage.ReadOffset
-		payload := readMessage.Payload
+		payload := readMessage.Body.Payload
 		parentPaneInfo := readMessage.MessageInfo
 
 		// apply source data transformer
@@ -1376,7 +1376,7 @@ func (f mySourceForwardTest) ApplyMap(ctx context.Context, readMessages []*isb.R
 				Payload: result,
 			},
 		}
-		writeMessage.Headers = readMessage.Headers
+		writeMessage.Header.Headers = readMessage.Header.Headers
 		resp = append(resp, isb.ReadWriteMessagePair{ReadMessage: readMessage, WriteMessages: []*isb.WriteMessage{{Message: writeMessage}}})
 	}
 
@@ -1389,7 +1389,7 @@ func (f mySourceForwardTest) ApplyMapStream(ctx context.Context, message *isb.Re
 
 		_ = ctx
 		offset := readMessage.ReadOffset
-		payload := readMessage.Payload
+		payload := readMessage.Body.Payload
 		parentPaneInfo := readMessage.MessageInfo
 
 		// apply source data transformer
@@ -1461,7 +1461,7 @@ func TestInterStepDataForwardSinglePartition(t *testing.T) {
 	readMessages, err := to1.Read(ctx, count)
 	assert.NoError(t, err, "expected no error")
 	assert.Len(t, readMessages, int(count))
-	assert.Equal(t, []interface{}{writeMessages[0].Keys, writeMessages[1].Keys}, []interface{}{readMessages[0].Keys, readMessages[1].Keys})
+	assert.Equal(t, []interface{}{writeMessages[0].Header.Keys, writeMessages[1].Header.Keys}, []interface{}{readMessages[0].Header.Keys, readMessages[1].Header.Keys})
 	assert.Equal(t, []interface{}{
 		isb.MessageID{
 			VertexName: "test-vertex",
@@ -1473,8 +1473,8 @@ func TestInterStepDataForwardSinglePartition(t *testing.T) {
 			Offset:     "1-0",
 			Index:      0,
 		},
-	}, []interface{}{readMessages[0].ID, readMessages[1].ID})
-	assert.Equal(t, []interface{}{writeMessages[0].Headers, writeMessages[1].Headers}, []interface{}{readMessages[0].Headers, readMessages[1].Headers})
+	}, []interface{}{readMessages[0].Header.ID, readMessages[1].Header.ID})
+	assert.Equal(t, []interface{}{writeMessages[0].Header.Headers, writeMessages[1].Header.Headers}, []interface{}{readMessages[0].Header.Headers, readMessages[1].Header.Headers})
 
 	f.Stop()
 	time.Sleep(1 * time.Millisecond)
@@ -1533,7 +1533,7 @@ func TestInterStepDataForwardMultiplePartition(t *testing.T) {
 	readMessages, err := to11.Read(ctx, 2)
 	assert.NoError(t, err, "expected no error")
 	assert.Len(t, readMessages, 2)
-	assert.Equal(t, []interface{}{writeMessages[0].Keys, writeMessages[2].Keys}, []interface{}{readMessages[0].Keys, readMessages[1].Keys})
+	assert.Equal(t, []interface{}{writeMessages[0].Header.Keys, writeMessages[2].Header.Keys}, []interface{}{readMessages[0].Header.Keys, readMessages[1].Header.Keys})
 	assert.Equal(t, []interface{}{
 		isb.MessageID{
 			VertexName: "test-vertex",
@@ -1545,15 +1545,15 @@ func TestInterStepDataForwardMultiplePartition(t *testing.T) {
 			Offset:     "2-0",
 			Index:      0,
 		},
-	}, []interface{}{readMessages[0].ID, readMessages[1].ID})
-	assert.Equal(t, []interface{}{writeMessages[0].Headers, writeMessages[2].Headers}, []interface{}{readMessages[0].Headers, readMessages[1].Headers})
+	}, []interface{}{readMessages[0].Header.ID, readMessages[1].Header.ID})
+	assert.Equal(t, []interface{}{writeMessages[0].Header.Headers, writeMessages[2].Header.Headers}, []interface{}{readMessages[0].Header.Headers, readMessages[1].Header.Headers})
 
 	time.Sleep(time.Second)
 
 	readMessages, err = to12.Read(ctx, 2)
 	assert.NoError(t, err, "expected no error")
 	assert.Len(t, readMessages, 2)
-	assert.Equal(t, []interface{}{writeMessages[1].Keys, writeMessages[3].Keys}, []interface{}{readMessages[0].Keys, readMessages[1].Keys})
+	assert.Equal(t, []interface{}{writeMessages[1].Header.Keys, writeMessages[3].Header.Keys}, []interface{}{readMessages[0].Header.Keys, readMessages[1].Header.Keys})
 	assert.Equal(t, []interface{}{
 		isb.MessageID{
 			VertexName: "test-vertex",
@@ -1565,8 +1565,8 @@ func TestInterStepDataForwardMultiplePartition(t *testing.T) {
 			Offset:     "3-0",
 			Index:      0,
 		},
-	}, []interface{}{readMessages[0].ID, readMessages[1].ID})
-	assert.Equal(t, []interface{}{writeMessages[1].Headers, writeMessages[3].Headers}, []interface{}{readMessages[0].Headers, readMessages[1].Headers})
+	}, []interface{}{readMessages[0].Header.ID, readMessages[1].Header.ID})
+	assert.Equal(t, []interface{}{writeMessages[1].Header.Headers, writeMessages[3].Header.Headers}, []interface{}{readMessages[0].Header.Headers, readMessages[1].Header.Headers})
 
 	f.Stop()
 	time.Sleep(1 * time.Millisecond)

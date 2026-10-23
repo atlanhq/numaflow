@@ -27,7 +27,7 @@ func CopyUDFTestApply(ctx context.Context, vertexName string, readMessages []*is
 	udfResults := make([]isb.ReadWriteMessagePair, len(readMessages))
 	for i, readMessage := range readMessages {
 		offset := readMessage.ReadOffset
-		payload := readMessage.Payload
+		payload := readMessage.Body.Payload
 		parentPaneInfo := readMessage.MessageInfo
 		// copy the payload
 		result := payload
@@ -58,7 +58,7 @@ func CopyUDFTestApplyStream(ctx context.Context, vertexName string, writeMessage
 	defer close(writeMessageCh)
 	_ = ctx
 	offset := readMessage.ReadOffset
-	payload := readMessage.Payload
+	payload := readMessage.Body.Payload
 	parentPaneInfo := readMessage.MessageInfo
 
 	// apply UDF
@@ -87,7 +87,7 @@ func CopyUDFTestApplyBatchMap(ctx context.Context, vertexName string, readMessag
 
 	for idx, readMessage := range readMessages {
 		offset := readMessage.ReadOffset
-		payload := readMessage.Payload
+		payload := readMessage.Body.Payload
 		parentPaneInfo := readMessage.MessageInfo
 		// copy the payload
 		result := payload

@@ -148,7 +148,7 @@ func (bw *BufferWrite) getConsumerLag(ctx context.Context) (int64, error) {
 		return 0, fmt.Errorf("error in getting lastDeliveredId: %w", err)
 	}
 	// Set the refresh count error to 0
-	bw.refreshFullError.Store(0)
+	bw.BufferWriteInfo.refreshFullError.Store(0)
 	// obtain current consumerLag
 	consumerLagDuration := time.UnixMilli(lastGeneratedId).Sub(time.UnixMilli(lastDeliveredId))
 
@@ -282,73 +282,73 @@ func (bw *BufferWrite) getPending(ctx context.Context) (*redis.XPendingCmd, erro
 
 // IsFull returns whether the buffer is full. It could be approximate.
 func (bw *BufferWrite) IsFull() bool {
-	return bw.isFull.Load()
+	return bw.BufferWriteInfo.isFull.Load()
 }
 
 // GetPendingCount is used to get the pendingCount value
 func (bw *BufferWrite) GetPendingCount() int64 {
-	return bw.pendingCount.Load()
+	return bw.BufferWriteInfo.pendingCount.Load()
 }
 
 // GetBufferLength is used to get the bufferLength value
 func (bw *BufferWrite) GetBufferLength() int64 {
-	return bw.bufferLength.Load()
+	return bw.BufferWriteInfo.bufferLength.Load()
 }
 
 // GetConsumerLag returns the consumerLag of the buffer
 func (bw *BufferWrite) GetConsumerLag() time.Duration {
-	return bw.consumerLag.Load()
+	return bw.BufferWriteInfo.consumerLag.Load()
 }
 
 // GetMinId returns the MINID of the buffer
 func (bw *BufferWrite) GetMinId() string {
-	return bw.minId.Load()
+	return bw.BufferWriteInfo.minId.Load()
 }
 
 // HasUnprocessedData tells us if we have any unprocessed data left in the buffer
 func (bw *BufferWrite) HasUnprocessedData() bool {
-	return bw.hasUnprocessedData.Load()
+	return bw.BufferWriteInfo.hasUnprocessedData.Load()
 }
 
 // GetRefreshFullError returns the refreshFullError count of the buffer
 func (bw *BufferWrite) GetRefreshFullError() uint32 {
-	return bw.refreshFullError.Load()
+	return bw.BufferWriteInfo.refreshFullError.Load()
 }
 
 // setIsFull is used to set the isFull value
 func (bw *BufferWrite) setIsFull(flag bool) {
-	bw.isFull.Store(flag)
+	bw.BufferWriteInfo.isFull.Store(flag)
 }
 
 // setPendingCount is used to set the pendingCount value
 func (bw *BufferWrite) setPendingCount(pendingCount int64) {
-	bw.pendingCount.Store(pendingCount)
+	bw.BufferWriteInfo.pendingCount.Store(pendingCount)
 }
 
 // setBufferLength is used to set the bufferLength value
 func (bw *BufferWrite) setBufferLength(bufferLength int64) {
-	bw.bufferLength.Store(bufferLength)
+	bw.BufferWriteInfo.bufferLength.Store(bufferLength)
 }
 
 // setConsumerLag is used to set the consumerLag value
 func (bw *BufferWrite) setConsumerLag(consumerLag time.Duration) {
-	bw.consumerLag.Store(consumerLag)
+	bw.BufferWriteInfo.consumerLag.Store(consumerLag)
 }
 
 // setMinId is used to set the minId value
 func (bw *BufferWrite) setMinId(minId string) {
-	bw.minId.Store(minId)
+	bw.BufferWriteInfo.minId.Store(minId)
 }
 
 // setHasUnprocessed is used to set the value of hasProcessed.
 func (bw *BufferWrite) setHasUnprocessed(hasUnprocessed bool) {
-	bw.hasUnprocessedData.Store(hasUnprocessed)
+	bw.BufferWriteInfo.hasUnprocessedData.Store(hasUnprocessed)
 }
 
 // setError is used to set error cases
 func (bw *BufferWrite) setError(errMsg string, err error) {
 	bw.log.Errorw(errMsg, zap.Error(err))
-	bw.refreshFullError.Inc()
+	bw.BufferWriteInfo.refreshFullError.Inc()
 }
 
 // splitId is used to split the Id obtained from redis.

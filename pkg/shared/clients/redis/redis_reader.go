@@ -84,7 +84,7 @@ func (br *RedisStreamsRead) Read(_ context.Context, count int64) ([]*isb.ReadMes
 
 	// start with 0-0 if CheckBackLog is true
 	labels := map[string]string{"buffer": br.GetName()}
-	if br.CheckBackLog {
+	if br.Options.CheckBackLog {
 		xstreams, err = br.processXReadResult("0-0", count)
 		if err != nil {
 			return br.processReadError(xstreams, messages, err)
@@ -97,7 +97,7 @@ func (br *RedisStreamsRead) Read(_ context.Context, count int64) ([]*isb.ReadMes
 			br.CheckBackLog = false
 		}
 	}
-	if !br.CheckBackLog {
+	if !br.Options.CheckBackLog {
 		xstreams, err = br.processXReadResult(">", count)
 		if err != nil {
 			return br.processReadError(xstreams, messages, err)
@@ -118,7 +118,7 @@ func (br *RedisStreamsRead) Read(_ context.Context, count int64) ([]*isb.ReadMes
 
 func (br *RedisStreamsRead) processReadError(xstreams []redis.XStream, messages []*isb.ReadMessage, err error) ([]*isb.ReadMessage, error) {
 	if errors.Is(err, context.Canceled) || errors.Is(err, redis.Nil) {
-		br.Log.Debugf("redis.Nil/context cancelled, checkBackLog=%v, err=%v", br.CheckBackLog, err)
+		br.Log.Debugf("redis.Nil/context cancelled, checkBackLog=%v, err=%v", br.Options.CheckBackLog, err)
 		return messages, nil
 	}
 
@@ -127,7 +127,7 @@ func (br *RedisStreamsRead) processReadError(xstreams []redis.XStream, messages 
 	}
 	// we should try to do our best effort to convert our data here, if there is data available in xstream from the previous loop
 	messages, errMsg := br.XStreamToMessages(xstreams, messages, map[string]string{"buffer": br.GetName()})
-	br.Log.Errorf("convertXStreamToMessages failed, checkBackLog=%v, err=%s", br.CheckBackLog, errMsg)
+	br.Log.Errorf("convertXStreamToMessages failed, checkBackLog=%v, err=%s", br.Options.CheckBackLog, errMsg)
 	return messages, fmt.Errorf("XReadGroup failed, %w", err)
 }
 
@@ -190,7 +190,7 @@ func (br *RedisStreamsRead) processXReadResult(startIndex string, count int64) (
 		Consumer: br.Consumer,
 		Streams:  []string{br.Stream, startIndex},
 		Count:    count,
-		Block:    br.ReadTimeOut,
+		Block:    br.Options.ReadTimeOut,
 	})
 	return result.Result()
 }

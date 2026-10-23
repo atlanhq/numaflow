@@ -106,6 +106,6 @@ func TestReadProvidedMessageBlob(t *testing.T) {
 
 	// All messages should have same payload of provided message blob
 	for _, msg := range messages {
-		assert.Equal(t, testVal, msg.Payload)
+		assert.Equal(t, testVal, msg.Body.Payload)
 	}
 }

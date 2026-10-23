@@ -88,8 +88,8 @@ func (u *GRPCBasedMap) ApplyMap(ctx context.Context, readMessages []*isb.ReadMes
 		req := &mappb.MapRequest{
 			Request: &mappb.MapRequest_Request{
 				Keys:      msg.Keys,
-				Value:     msg.Payload,
-				EventTime: timestamppb.New(msg.EventTime),
+				Value:     msg.Body.Payload,
+				EventTime: timestamppb.New(msg.MessageInfo.EventTime),
 				Watermark: timestamppb.New(msg.Watermark),
 				Headers:   msg.Headers,
 			},
@@ -152,7 +152,7 @@ func (u *GRPCBasedMap) ApplyMapStream(ctx context.Context, message *isb.ReadMess
 	defer close(writeMessageCh)
 
 	keys := message.Keys
-	payload := message.Payload
+	payload := message.Body.Payload
 	offset := message.ReadOffset
 	parentMessageInfo := message.MessageInfo
 

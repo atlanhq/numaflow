@@ -212,7 +212,7 @@ func Test_gRPCBasedUDSource_ApplyReadWithMockClient(t *testing.T) {
 		readMessages, err := u.ApplyReadFn(ctx, 1, time.Millisecond*1000)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(readMessages))
-		assert.Equal(t, []byte(`test_payload`), readMessages[0].Payload)
+		assert.Equal(t, []byte(`test_payload`), readMessages[0].Body.Payload)
 		assert.Equal(t, []string{"test_key"}, readMessages[0].Keys)
 		assert.Equal(t, NewUserDefinedSourceOffset(offset), readMessages[0].ReadOffset)
 		assert.Equal(t, TestEventTime, readMessages[0].EventTime)

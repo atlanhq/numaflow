@@ -83,7 +83,7 @@ func (iw *SourceIdleHandler) hasStepIntervalPassed() bool {
 	// -1 is used as the default value for lastIdleWmPublishedTime, so that we immediately publish the idle watermark
 	// when the source is idling for the first time after the threshold has passed and next subsequent idle watermark
 	// is published after the step interval has passed.
-	if iw.lastIdleWmPublishedTime.Equal(time.UnixMilli(-1)) {
+	if iw.lastIdleWmPublishedTime == time.UnixMilli(-1) {
 		return true
 	}
 

@@ -266,7 +266,7 @@ func (j JetStreamBufferService) GetStatefulSetSpec(req GetJetStreamStatefulSetSp
 			},
 		},
 	}
-	j.ApplyToPodSpec(podSpec)
+	j.AbstractPodTemplate.ApplyToPodSpec(podSpec)
 	spec := appv1.StatefulSetSpec{
 		PodManagementPolicy: appv1.ParallelPodManagement,
 		Replicas:            &replicas,

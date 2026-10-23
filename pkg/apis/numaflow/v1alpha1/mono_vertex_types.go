@@ -267,7 +267,7 @@ func (mv MonoVertex) GetDaemonDeploymentObj(req GetMonoVertexDaemonDeploymentReq
 	}
 	if dt := mv.Spec.DaemonTemplate; dt != nil {
 		spec.Replicas = dt.Replicas
-		dt.ApplyToPodTemplateSpec(&spec.Template)
+		dt.AbstractPodTemplate.ApplyToPodTemplateSpec(&spec.Template)
 		if dt.ContainerTemplate != nil {
 			dt.ContainerTemplate.ApplyToNumaflowContainers(spec.Template.Spec.Containers)
 		}
@@ -419,7 +419,7 @@ func (mv MonoVertex) GetPodSpec(req GetMonoVertexPodSpecReq) (*corev1.PodSpec, e
 		InitContainers: mv.Spec.InitContainers,
 		Containers:     append(containers, mv.Spec.Sidecars...),
 	}
-	mv.Spec.ApplyToPodSpec(spec)
+	mv.Spec.AbstractPodTemplate.ApplyToPodSpec(spec)
 	if mv.Spec.ContainerTemplate != nil {
 		mv.Spec.ContainerTemplate.ApplyToNumaflowContainers(spec.Containers)
 	}

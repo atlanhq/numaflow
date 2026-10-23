@@ -313,7 +313,7 @@ func (df *DataForward) forwardAChunk(ctx context.Context) {
 		// if there are no windows, and the len(readBatch) == 0
 		// then it means there's an idle situation
 		// in this case, send idle watermark to all the toBuffer partitions
-		if oldestWindowEndTime := df.windower.OldestWindowEndTime(); oldestWindowEndTime.Equal(time.UnixMilli(-1)) {
+		if oldestWindowEndTime := df.windower.OldestWindowEndTime(); oldestWindowEndTime == time.UnixMilli(-1) {
 			for toVertexName, toVertexBuffer := range df.toBuffers {
 				if publisher, ok := df.wmPublishers[toVertexName]; ok {
 					for _, bufferPartition := range toVertexBuffer {
@@ -362,7 +362,7 @@ func (df *DataForward) forwardAChunk(ctx context.Context) {
 	for _, m := range readMessages {
 		if !df.keyed {
 			m.Keys = []string{dfv1.DefaultKeyForNonKeyedData}
-			m.Keys = []string{dfv1.DefaultKeyForNonKeyedData}
+			m.Message.Keys = []string{dfv1.DefaultKeyForNonKeyedData}
 		}
 		m.Watermark = time.Time(processorWM)
 		totalBytes += len(m.Payload)

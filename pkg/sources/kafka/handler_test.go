@@ -87,7 +87,7 @@ func TestMessageHandling(t *testing.T) {
 
 	readmsg := readmsgs[0]
 	assert.Equal(t, expectedID, readmsg.ID)
-	assert.Equal(t, []byte(value), readmsg.Payload)
-	assert.Equal(t, keys, readmsg.Keys)
+	assert.Equal(t, []byte(value), readmsg.Body.Payload)
+	assert.Equal(t, keys, readmsg.Header.Keys)
 	assert.Equal(t, expectedID.Offset, readmsg.ReadOffset.String())
 }

@@ -189,7 +189,7 @@ func (ac *AdmissionController) register(ctx context.Context, client clientadmiss
 		if !reflect.DeepEqual(configuredWebhook.Webhooks, webhook.Webhooks) {
 			ac.Logger.Info("Updating webhook")
 			// Set the ResourceVersion as required by update.
-			webhook.ResourceVersion = configuredWebhook.ResourceVersion
+			webhook.ObjectMeta.ResourceVersion = configuredWebhook.ObjectMeta.ResourceVersion
 			if _, err := client.Update(ctx, webhook, metav1.UpdateOptions{}); err != nil {
 				return fmt.Errorf("failed to update webhook, %w", err)
 			}

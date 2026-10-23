@@ -348,7 +348,7 @@ func Test_batchSyncWithSyncDuration(t *testing.T) {
 		maxBatchSize: dfv1.DefaultWALMaxSyncSize,
 		syncDuration: 0,
 		pipelineName: vi.Vertex.Spec.PipelineName,
-		vertexName:   vi.Vertex.Spec.Name,
+		vertexName:   vi.Vertex.Spec.AbstractVertex.Name,
 		replicaIndex: vi.Replica,
 		activeWals:   make(map[string]wal.WAL),
 	}
