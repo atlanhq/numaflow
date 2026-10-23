@@ -43,7 +43,7 @@ func (b *Builtin) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	sourcetransformer.NewServer(executor, sourcetransformer.WithMaxMessageSize(1024*1024*64)).Start(ctx)
+	_ = sourcetransformer.NewServer(executor, sourcetransformer.WithMaxMessageSize(1024*1024*64)).Start(ctx)
 	return nil
 }
 

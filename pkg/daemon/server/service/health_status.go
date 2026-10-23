@@ -21,8 +21,9 @@ import (
 	"sync"
 	"time"
 
+	"context"
+
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 
 	"github.com/numaproj/numaflow/pkg/apis/numaflow/v1alpha1"
 	"github.com/numaproj/numaflow/pkg/apis/proto/daemon"

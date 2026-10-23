@@ -258,19 +258,19 @@ manifests: crds
 	kubectl kustomize config/extensions/webhook > config/validating-webhook-install.yaml
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 
 .PHONY: lint
 lint: $(GOPATH)/bin/golangci-lint
 	go mod tidy
-	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m --enable goimports
+	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 
 .PHONY: start
 start: image
 	kubectl apply -f test/manifests/numaflow-ns.yaml
 	kubectl -n numaflow-system delete cm numaflow-cmd-params-config --ignore-not-found=true
-	kubectl kustomize test/manifests | sed 's@quay.io/numaproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | kubectl -n numaflow-system apply -l app.kubernetes.io/part-of=numaflow --prune=false --force -f -
-	kubectl -n numaflow-system wait -lapp.kubernetes.io/part-of=numaflow --for=condition=Ready --timeout 60s pod --all
+	kubectl kustomize test/manifests | sed 's@quay.io/numaproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | sed 's@bitnami/@bitnamilegacy/@g' | kubectl -n numaflow-system apply -l app.kubernetes.io/part-of=numaflow --prune=false --force -f -
+	kubectl -n numaflow-system wait deployment -lapp.kubernetes.io/part-of=numaflow --for=condition=Available --timeout 60s
 
 .PHONY: e2eapi-image
 e2eapi-image: clean dist/e2eapi

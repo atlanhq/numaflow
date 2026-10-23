@@ -35,7 +35,6 @@ type testDatum struct {
 	value     []byte
 	eventTime time.Time
 	watermark time.Time
-	metadata  testDatumMetadata
 	headers   map[string]string
 }
 
@@ -53,19 +52,6 @@ func (h *testDatum) EventTime() time.Time {
 
 func (h *testDatum) Watermark() time.Time {
 	return h.watermark
-}
-
-type testDatumMetadata struct {
-	id           string
-	numDelivered uint64
-}
-
-func (t testDatumMetadata) ID() string {
-	return t.id
-}
-
-func (t testDatumMetadata) NumDelivered() uint64 {
-	return t.numDelivered
 }
 
 func TestExpression(t *testing.T) {

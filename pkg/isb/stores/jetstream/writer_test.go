@@ -95,7 +95,7 @@ func TestForwarderJetStreamBuffer(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 			defer cancel()
-			defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+			defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 			defer defaultJetStreamClient.Close()
 			js, err := defaultJetStreamClient.JetStreamContext()
 			assert.NoError(t, err)
@@ -226,7 +226,7 @@ func TestJetStreamBufferWriterBufferFull(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 	js, err := defaultJetStreamClient.JetStreamContext()
 	assert.NoError(t, err)
@@ -283,7 +283,7 @@ func TestJetStreamBufferWriterBufferFull_DiscardLatest(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 	js, err := defaultJetStreamClient.JetStreamContext()
 	assert.NoError(t, err)
@@ -339,7 +339,7 @@ func TestWriteGetName(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 	js, err := defaultJetStreamClient.JetStreamContext()
 	assert.NoError(t, err)
@@ -365,7 +365,7 @@ func TestWriteClose(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 	js, err := defaultJetStreamClient.JetStreamContext()
 	assert.NoError(t, err)

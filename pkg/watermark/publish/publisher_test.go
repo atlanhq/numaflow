@@ -50,7 +50,7 @@ func TestPublisherWithSharedOTBucket(t *testing.T) {
 
 	var ctx = context.Background()
 
-	defaultJetStreamClient := natsclient.NewTestClientWithServer(t, s)
+	defaultJetStreamClient := natsclient.NewTestClient(t, s.ClientURL())
 	defer defaultJetStreamClient.Close()
 	js, err := defaultJetStreamClient.JetStreamContext()
 	assert.NoError(t, err)

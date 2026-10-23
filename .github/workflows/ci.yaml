@@ -71,13 +71,12 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      nats:
-        image: "bitnami/nats:latest"
-        ports:
-          - 4222:4222
-        env:
-          NATS_EXTRA_ARGS: -js
     steps:
+      # bitnami/nats is no longer published. Same approach as upstream: run the
+      # official image with JetStream enabled.
+      - name: Start NATS
+        run: docker run -d -p 4222:4222 nats:2.11.17 -js
+
       - name: Set up Go 1.x
         uses: actions/setup-go@v5
         with:
@@ -171,7 +170,7 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
+        uses: mozilla-actions/sccache-action@v0.0.11
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Print Protoc version
