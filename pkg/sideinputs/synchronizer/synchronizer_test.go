@@ -66,7 +66,7 @@ func TestSideInputsValueUpdates(t *testing.T) {
 	defer cancel()
 
 	// connect to NATS
-	nc := natsclient.NewTestClientWithServer(t, s)
+	nc := natsclient.NewTestClient(t, s.ClientURL())
 	defer nc.Close()
 
 	// create JetStream Context
