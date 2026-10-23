@@ -106,7 +106,7 @@ func NewBufferWrite(ctx context.Context, client *redisclient.RedisClient, name s
 	// setWriteInfo is used to update isFull flag and minId once
 	rqw.setWriteInfo(ctx)
 
-	if rqw.Options.RefreshBufferWriteInfo {
+	if rqw.RefreshBufferWriteInfo {
 		// refresh isFull flag at a periodic interval
 		go rqw.refreshWriteInfo(ctx)
 	}
@@ -116,7 +116,7 @@ func NewBufferWrite(ctx context.Context, client *redisclient.RedisClient, name s
 
 // refreshWriteInfo is used to refresh the changes
 func (bw *BufferWrite) refreshWriteInfo(ctx context.Context) {
-	ticker := time.NewTicker(bw.Options.InfoRefreshInterval)
+	ticker := time.NewTicker(bw.InfoRefreshInterval)
 	defer ticker.Stop()
 	bw.log.Infow("refreshWriteInfo has started")
 	for {
@@ -222,7 +222,7 @@ func (bw *BufferWrite) pipelinedWrite(ctx context.Context, script *redis.Script,
 			errs[idx] = err
 			continue
 		}
-		cmds[idx] = script.Run(ctx, pipe, []string{bw.GetHashKeyName(message.EventTime), bw.Stream}, message.Header.ID, headerBytes, message.Body.Payload, bw.BufferWriteInfo.minId.String())
+		cmds[idx] = script.Run(ctx, pipe, []string{bw.GetHashKeyName(message.EventTime), bw.Stream}, message.ID, headerBytes, message.Payload, bw.minId.String())
 	}
 
 	scriptMissing := false

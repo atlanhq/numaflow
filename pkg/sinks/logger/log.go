@@ -68,7 +68,7 @@ func (t *ToLog) Write(_ context.Context, messages []isb.Message) ([]isb.Offset, 
 	for _, message := range messages {
 		var hStr strings.Builder
 		for k, v := range message.Headers {
-			hStr.WriteString(fmt.Sprintf("%s: %s, ", k, v))
+			fmt.Fprintf(&hStr, "%s: %s, ", k, v)
 		}
 		log.Println(prefix, " Payload - ", string(message.Payload), " Keys - ", message.Keys, " EventTime - ", message.EventTime.UnixMilli(), " Headers - ", hStr.String(), " ID - ", message.ID.String())
 	}

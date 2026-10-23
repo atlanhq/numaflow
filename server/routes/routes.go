@@ -206,11 +206,12 @@ func authMiddleware(ctx context.Context, authorizer authz.Authorizer, dexAuthent
 		}
 
 		// Authenticate the user based on the login type.
-		if loginType == "dex" {
+		switch loginType {
+		case "dex":
 			userInfo, err = dexAuthenticator.Authenticate(c)
-		} else if loginType == "local" {
+		case "local":
 			userInfo, err = localUsersAuthenticator.Authenticate(c)
-		} else {
+		default:
 			errMsg := fmt.Sprintf("unidentified login type received: %v", loginType)
 			c.JSON(http.StatusUnauthorized, v1.NewNumaflowAPIResponse(&errMsg, nil))
 			c.Abort()

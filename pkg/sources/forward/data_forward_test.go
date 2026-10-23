@@ -859,7 +859,7 @@ var testSourceNewEventTime = testSourceWatermark.Add(time.Duration(-1) * time.Mi
 func (f mySourceForwardTest) ApplyTransform(ctx context.Context, messages []*isb.ReadMessage) ([]isb.ReadWriteMessagePair, error) {
 	results := make([]isb.ReadWriteMessagePair, len(messages))
 	for i, message := range messages {
-		message.MessageInfo.EventTime = testSourceNewEventTime
+		message.EventTime = testSourceNewEventTime
 		writeMsg := isb.Message{
 			Header: isb.Header{
 				MessageInfo: message.MessageInfo,
@@ -870,7 +870,7 @@ func (f mySourceForwardTest) ApplyTransform(ctx context.Context, messages []*isb
 				Keys: []string{},
 			},
 			Body: isb.Body{
-				Payload: message.Body.Payload,
+				Payload: message.Payload,
 			},
 		}
 		results[i] = isb.ReadWriteMessagePair{
@@ -934,8 +934,8 @@ func TestDataForwardSinglePartition(t *testing.T) {
 	readMessages, err := to1.Read(ctx, count)
 	assert.NoError(t, err, "expected no error")
 	assert.Len(t, readMessages, int(count))
-	assert.Equal(t, []interface{}{writeMessages[0].Header.Keys, writeMessages[1].Header.Keys}, []interface{}{readMessages[0].Header.Keys, readMessages[1].Header.Keys})
-	assert.Equal(t, []interface{}{isb.MessageID{VertexName: "test-vertex", Offset: "0-0", Index: 0}, isb.MessageID{VertexName: "test-vertex", Offset: "1-0", Index: 0}}, []interface{}{readMessages[0].Header.ID, readMessages[1].Header.ID})
+	assert.Equal(t, []interface{}{writeMessages[0].Keys, writeMessages[1].Keys}, []interface{}{readMessages[0].Keys, readMessages[1].Keys})
+	assert.Equal(t, []interface{}{isb.MessageID{VertexName: "test-vertex", Offset: "0-0", Index: 0}, isb.MessageID{VertexName: "test-vertex", Offset: "1-0", Index: 0}}, []interface{}{readMessages[0].ID, readMessages[1].ID})
 	for _, m := range readMessages {
 		// verify new event time gets assigned to messages.
 		assert.Equal(t, testSourceNewEventTime, m.EventTime)
@@ -993,7 +993,7 @@ func TestDataForwardMultiplePartition(t *testing.T) {
 	readMessages, err := to11.Read(ctx, 2)
 	assert.NoError(t, err, "expected no error")
 	assert.Len(t, readMessages, 2)
-	assert.Equal(t, []interface{}{writeMessages[0].Header.Keys, writeMessages[2].Header.Keys}, []interface{}{readMessages[0].Header.Keys, readMessages[1].Header.Keys})
+	assert.Equal(t, []interface{}{writeMessages[0].Keys, writeMessages[2].Keys}, []interface{}{readMessages[0].Keys, readMessages[1].Keys})
 	assert.Equal(t, []interface{}{
 		isb.MessageID{
 			VertexName: "test-vertex",
@@ -1005,7 +1005,7 @@ func TestDataForwardMultiplePartition(t *testing.T) {
 			Offset:     "2-0",
 			Index:      0,
 		},
-	}, []interface{}{readMessages[0].Header.ID, readMessages[1].Header.ID})
+	}, []interface{}{readMessages[0].ID, readMessages[1].ID})
 	for _, m := range readMessages {
 		// verify new event time gets assigned to messages.
 		assert.Equal(t, testSourceNewEventTime, m.EventTime)
@@ -1018,7 +1018,7 @@ func TestDataForwardMultiplePartition(t *testing.T) {
 	readMessages, err = to12.Read(ctx, 2)
 	assert.NoError(t, err, "expected no error")
 	assert.Len(t, readMessages, 2)
-	assert.Equal(t, []interface{}{writeMessages[1].Header.Keys, writeMessages[3].Header.Keys}, []interface{}{readMessages[0].Header.Keys, readMessages[1].Header.Keys})
+	assert.Equal(t, []interface{}{writeMessages[1].Keys, writeMessages[3].Keys}, []interface{}{readMessages[0].Keys, readMessages[1].Keys})
 	assert.Equal(t, []interface{}{
 		isb.MessageID{
 			VertexName: "test-vertex",
@@ -1030,7 +1030,7 @@ func TestDataForwardMultiplePartition(t *testing.T) {
 			Offset:     "3-0",
 			Index:      0,
 		},
-	}, []interface{}{readMessages[0].Header.ID, readMessages[1].Header.ID})
+	}, []interface{}{readMessages[0].ID, readMessages[1].ID})
 	for _, m := range readMessages {
 		// verify new event time gets assigned to messages.
 		assert.Equal(t, testSourceNewEventTime, m.EventTime)

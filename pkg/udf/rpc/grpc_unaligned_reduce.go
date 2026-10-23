@@ -190,7 +190,7 @@ func createUnalignedReduceRequest(windowRequest *window.TimedWindowRequest) *ses
 		payload = &sessionreducepb.SessionReduceRequest_Payload{
 			Keys:      windowRequest.ReadMessage.Keys,
 			Value:     windowRequest.ReadMessage.Payload,
-			EventTime: timestamppb.New(windowRequest.ReadMessage.MessageInfo.EventTime),
+			EventTime: timestamppb.New(windowRequest.ReadMessage.EventTime),
 			Watermark: timestamppb.New(windowRequest.ReadMessage.Watermark),
 			Headers:   windowRequest.ReadMessage.Headers,
 		}

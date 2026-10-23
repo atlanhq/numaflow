@@ -50,7 +50,7 @@ func NewFSManager(ctx context.Context, segmentWALPath string, compactWALPath str
 		segmentWALPath: segmentWALPath,
 		compactWALPath: compactWALPath,
 		pipelineName:   vertexInstance.Vertex.Spec.PipelineName,
-		vertexName:     vertexInstance.Vertex.Spec.AbstractVertex.Name,
+		vertexName:     vertexInstance.Vertex.Spec.Name,
 		replicaIndex:   vertexInstance.Replica,
 		activeWALs:     make(map[string]wal.WAL),
 		log:            logging.FromContext(ctx),

@@ -171,7 +171,7 @@ func (v *processorManager) refreshingProcessors() {
 			p.setStatus(_inactive)
 		} else {
 			p.setStatus(_active)
-			debugStr.WriteString(fmt.Sprintf("[%s] ", pName))
+			fmt.Fprintf(&debugStr, "[%s] ", pName)
 		}
 	}
 	v.log.Debugw("Active processors", zap.String("hbKVName", v.watermarkStore.HeartbeatStore().GetStoreName()), zap.String("otKVName", v.watermarkStore.OffsetTimelineStore().GetStoreName()), zap.String("DebugStr", debugStr.String()))

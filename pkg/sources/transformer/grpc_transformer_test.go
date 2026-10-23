@@ -190,7 +190,7 @@ func TestGRPCBasedTransformer_ApplyWithServer_ChangePayload(t *testing.T) {
 
 	for _, pair := range apply {
 		resultPayload := pair.WriteMessages[0].Payload
-		resultKeys := pair.WriteMessages[0].Header.Keys
+		resultKeys := pair.WriteMessages[0].Keys
 		var readMessagePayload testutils.PayloadForTest
 		_ = json.Unmarshal(pair.ReadMessage.Payload, &readMessagePayload)
 		var expectedKeys []string

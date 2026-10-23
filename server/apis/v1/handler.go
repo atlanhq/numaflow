@@ -162,7 +162,8 @@ func (h *handler) AuthInfo(c *gin.Context) {
 		return
 	}
 
-	if loginType == "dex" {
+	switch loginType {
+	case "dex":
 		cookies := c.Request.Cookies()
 		userIdentityTokenStr, err := common.JoinCookies(common.UserIdentityCookieName, cookies)
 		if err != nil {
@@ -198,7 +199,7 @@ func (h *handler) AuthInfo(c *gin.Context) {
 		res := authn.NewUserInfo(&claims, userInfo.IDToken, userInfo.RefreshToken)
 		c.JSON(http.StatusOK, NewNumaflowAPIResponse(nil, res))
 		return
-	} else if loginType == "local" {
+	case "local":
 		userIdentityTokenStr, err := c.Cookie(common.JWTCookieName)
 		if err != nil {
 			errMsg := fmt.Sprintf("User is not authenticated, err: %s", err.Error())
@@ -1044,7 +1045,7 @@ func (h *handler) GetNamespaceEvents(c *gin.Context) {
 		defaultTimeObject time.Time
 	)
 	for _, event := range events.Items {
-		if event.LastTimestamp.Time == defaultTimeObject {
+		if event.LastTimestamp.Time.Equal(defaultTimeObject) {
 			continue
 		}
 		if (objType == "" && objName == "") ||
@@ -1452,11 +1453,12 @@ func getPipelineStatus(pipeline *dfv1.Pipeline) (string, error) {
 // TODO: Figure out the correct way to determine if a ISBService is healthy
 func getIsbServiceStatus(isbsvc *dfv1.InterStepBufferService) (string, error) {
 	retStatus := ISBServiceStatusHealthy
-	if isbsvc.Status.Phase == dfv1.ISBSvcPhaseUnknown {
+	switch isbsvc.Status.Phase {
+	case dfv1.ISBSvcPhaseUnknown:
 		retStatus = ISBServiceStatusInactive
-	} else if isbsvc.Status.Phase == dfv1.ISBSvcPhasePending || isbsvc.Status.Phase == dfv1.ISBSvcPhaseRunning {
+	case dfv1.ISBSvcPhasePending, dfv1.ISBSvcPhaseRunning:
 		retStatus = ISBServiceStatusHealthy
-	} else if isbsvc.Status.Phase == dfv1.ISBSvcPhaseFailed {
+	case dfv1.ISBSvcPhaseFailed:
 		retStatus = ISBServiceStatusCritical
 	}
 	return retStatus, nil

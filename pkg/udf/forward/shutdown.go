@@ -33,10 +33,10 @@ type Shutdown struct {
 
 // IsShuttingDown returns whether we can stop processing.
 func (isdf *InterStepDataForward) IsShuttingDown() (bool, error) {
-	isdf.Shutdown.rwlock.RLock()
-	defer isdf.Shutdown.rwlock.RUnlock()
+	isdf.rwlock.RLock()
+	defer isdf.rwlock.RUnlock()
 
-	if isdf.Shutdown.forceShutdown || isdf.Shutdown.startShutdown {
+	if isdf.forceShutdown || isdf.startShutdown {
 		return true, nil
 	}
 
@@ -52,13 +52,13 @@ func (s *Shutdown) String() string {
 
 // Stop stops the processing.
 func (isdf *InterStepDataForward) Stop() {
-	isdf.Shutdown.rwlock.Lock()
-	defer isdf.Shutdown.rwlock.Unlock()
-	if isdf.Shutdown.initiateTime.IsZero() {
-		isdf.Shutdown.initiateTime = time.Now()
+	isdf.rwlock.Lock()
+	defer isdf.rwlock.Unlock()
+	if isdf.initiateTime.IsZero() {
+		isdf.initiateTime = time.Now()
 	}
-	isdf.Shutdown.startShutdown = true
-	isdf.Shutdown.shutdownRequestCtr++
+	isdf.startShutdown = true
+	isdf.shutdownRequestCtr++
 	// call cancel
 	isdf.cancelFn()
 }
@@ -68,7 +68,7 @@ func (isdf *InterStepDataForward) ForceStop() {
 	// call stop (what if we have an enthusiastic shutdown that forces first)
 	// e.g. I know I have written a wrong map UDF, so shutdown ASAP
 	isdf.Stop()
-	isdf.Shutdown.rwlock.Lock()
-	defer isdf.Shutdown.rwlock.Unlock()
-	isdf.Shutdown.forceShutdown = true
+	isdf.rwlock.Lock()
+	defer isdf.rwlock.Unlock()
+	isdf.forceShutdown = true
 }

@@ -12,20 +12,20 @@ func (m Message) MarshalBinary() ([]byte, error) {
 	pb := &isb.Message{
 		Header: &isb.Header{
 			MessageInfo: &isb.MessageInfo{
-				EventTime: timestamppb.New(m.Header.MessageInfo.EventTime),
-				IsLate:    m.Header.MessageInfo.IsLate,
+				EventTime: timestamppb.New(m.EventTime),
+				IsLate:    m.IsLate,
 			},
-			Kind: isb.MessageKind(m.Header.Kind),
+			Kind: isb.MessageKind(m.Kind),
 			Id: &isb.MessageID{
-				VertexName: m.Header.ID.VertexName,
-				Offset:     m.Header.ID.Offset,
-				Index:      m.Header.ID.Index,
+				VertexName: m.ID.VertexName,
+				Offset:     m.ID.Offset,
+				Index:      m.ID.Index,
 			},
-			Keys:    m.Header.Keys,
-			Headers: m.Header.Headers,
+			Keys:    m.Keys,
+			Headers: m.Headers,
 		},
 		Body: &isb.Body{
-			Payload: m.Body.Payload,
+			Payload: m.Payload,
 		},
 	}
 	return proto.Marshal(pb)
@@ -59,7 +59,7 @@ func (m *Message) UnmarshalBinary(data []byte) error {
 		Headers: pb.Header.Headers,
 	}
 
-	m.Body.Payload = pb.Body.Payload
+	m.Payload = pb.Body.Payload
 
 	return nil
 }
@@ -68,8 +68,8 @@ func (m *Message) UnmarshalBinary(data []byte) error {
 func (h Header) MarshalBinary() ([]byte, error) {
 	pb := &isb.Header{
 		MessageInfo: &isb.MessageInfo{
-			EventTime: timestamppb.New(h.MessageInfo.EventTime),
-			IsLate:    h.MessageInfo.IsLate,
+			EventTime: timestamppb.New(h.EventTime),
+			IsLate:    h.IsLate,
 		},
 		Kind:    isb.MessageKind(h.Kind),
 		Id:      &isb.MessageID{VertexName: h.ID.VertexName, Offset: h.ID.Offset, Index: h.ID.Index},

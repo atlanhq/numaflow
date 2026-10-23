@@ -105,7 +105,7 @@ func BuildTestReadMessagesIntOffset(count int64, startTime time.Time, keys []str
 	var readMessages = make([]isb.ReadMessage, count)
 
 	for idx, writeMessage := range writeMessages {
-		splitStr := strings.Split(writeMessage.Header.ID.String(), "-")
+		splitStr := strings.Split(writeMessage.ID.String(), "-")
 		offset, _ := strconv.Atoi(splitStr[len(splitStr)-1])
 		readMessages[idx] = isb.ReadMessage{
 			Message:    writeMessage,

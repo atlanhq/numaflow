@@ -200,8 +200,8 @@ func (jw *jetStreamWriter) asyncWrite(_ context.Context, messages []isb.Message,
 		var pubOpts []nats.PubOpt
 		// nats.MsgId() is for exactly-once writing
 		// we don't need to set MsgId for control message
-		if message.Header.Kind != isb.WMB {
-			pubOpts = append(pubOpts, nats.MsgId(message.Header.ID.String()))
+		if message.Kind != isb.WMB {
+			pubOpts = append(pubOpts, nats.MsgId(message.ID.String()))
 		}
 		if future, err := jw.js.PublishMsgAsync(m, pubOpts...); err != nil { // nats.MsgId() is for exactly-once writing
 			errs[index] = err
@@ -277,8 +277,8 @@ func (jw *jetStreamWriter) syncWrite(_ context.Context, messages []isb.Message, 
 			pubOpts := []nats.PubOpt{nats.AckWait(2 * time.Second)}
 			// nats.MsgId() is for exactly-once writing
 			// we don't need to set MsgId for control message
-			if message.Header.Kind != isb.WMB {
-				pubOpts = append(pubOpts, nats.MsgId(message.Header.ID.String()))
+			if message.Kind != isb.WMB {
+				pubOpts = append(pubOpts, nats.MsgId(message.ID.String()))
 			}
 			if pubAck, err := jw.js.PublishMsg(m, pubOpts...); err != nil {
 				errs[idx] = err

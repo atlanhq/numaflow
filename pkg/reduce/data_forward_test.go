@@ -445,7 +445,7 @@ func TestDataForward_StartWithNoOpWM(t *testing.T) {
 	// the number of keyed windows that closed
 	msgs, readErr := to.Read(child, 1)
 	assert.Nil(t, readErr)
-	for len(msgs) == 0 || msgs[0].Header.Kind == isb.WMB {
+	for len(msgs) == 0 || msgs[0].Kind == isb.WMB {
 		select {
 		case <-child.Done():
 			assert.Fail(t, child.Err().Error())
@@ -667,7 +667,7 @@ func TestReduceDataForward_IdleWM(t *testing.T) {
 	// in the test ApplyUDF above we've set the final message to have eventTime = partitionID.End-1ms
 	assert.Equal(t, int64(1679961604999), msgs[1].EventTime.UnixMilli())
 	var result PayloadForTest
-	err = json.Unmarshal(msgs[1].Body.Payload, &result)
+	err = json.Unmarshal(msgs[1].Payload, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, "count", result.Key)
 	// because we are using count udf here, and we only send one data message
@@ -749,7 +749,7 @@ func TestReduceDataForward_Count(t *testing.T) {
 	// the number of keyed windows that closed
 	msgs, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs) == 0 || msgs[0].Header.Kind == isb.WMB {
+	for len(msgs) == 0 || msgs[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -838,7 +838,7 @@ func TestReduceDataForward_AllowedLatencyCount(t *testing.T) {
 	// the number of keyed windows that closed
 	msgs, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs) == 0 || msgs[0].Header.Kind == isb.WMB {
+	for len(msgs) == 0 || msgs[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -923,7 +923,7 @@ func TestReduceDataForward_Sum(t *testing.T) {
 	// the number of keyed windows that closed
 	msgs, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs) == 0 || msgs[0].Header.Kind == isb.WMB {
+	for len(msgs) == 0 || msgs[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1009,7 +1009,7 @@ func TestReduceDataForward_Max(t *testing.T) {
 	// the number of keyed windows that closed
 	msgs, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs) == 0 || msgs[0].Header.Kind == isb.WMB {
+	for len(msgs) == 0 || msgs[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1095,7 +1095,7 @@ func TestReduceDataForward_FixedSumWithDifferentKeys(t *testing.T) {
 
 	msgs0, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs0) == 0 || msgs0[0].Header.Kind == isb.WMB {
+	for len(msgs0) == 0 || msgs0[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1109,7 +1109,7 @@ func TestReduceDataForward_FixedSumWithDifferentKeys(t *testing.T) {
 
 	msgs1, readErr1 := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr1)
-	for len(msgs1) == 0 || msgs1[0].Header.Kind == isb.WMB {
+	for len(msgs1) == 0 || msgs1[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1202,7 +1202,7 @@ func TestReduceDataForward_SumWithDifferentKeys(t *testing.T) {
 
 	msgs0, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs0) == 0 || msgs0[0].Header.Kind == isb.WMB {
+	for len(msgs0) == 0 || msgs0[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1216,7 +1216,7 @@ func TestReduceDataForward_SumWithDifferentKeys(t *testing.T) {
 
 	msgs1, readErr1 := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr1)
-	for len(msgs1) == 0 || msgs1[0].Header.Kind == isb.WMB {
+	for len(msgs1) == 0 || msgs1[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1308,7 +1308,7 @@ func TestReduceDataForward_NonKeyed(t *testing.T) {
 	// the number of keyed windows that closed
 	msgs, readErr := buffer.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs) == 0 || msgs[0].Header.Kind == isb.WMB {
+	for len(msgs) == 0 || msgs[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1496,7 +1496,7 @@ func TestReduceDataForward_SumMultiPartitions(t *testing.T) {
 
 	msgs0, readErr := buffer1.Read(ctx, 1)
 	assert.Nil(t, readErr)
-	for len(msgs0) == 0 || msgs0[0].Header.Kind == isb.WMB {
+	for len(msgs0) == 0 || msgs0[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())
@@ -1510,7 +1510,7 @@ func TestReduceDataForward_SumMultiPartitions(t *testing.T) {
 
 	msgs1, readErr1 := buffer2.Read(ctx, 1)
 	assert.Nil(t, readErr1)
-	for len(msgs1) == 0 || msgs1[0].Header.Kind == isb.WMB {
+	for len(msgs1) == 0 || msgs1[0].Kind == isb.WMB {
 		select {
 		case <-ctx.Done():
 			assert.Fail(t, ctx.Err().Error())

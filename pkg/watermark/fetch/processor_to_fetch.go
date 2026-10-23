@@ -74,7 +74,7 @@ func (p *ProcessorToFetch) GetOffsetTimelines() []*timeline.OffsetTimeline {
 func (p *ProcessorToFetch) String() string {
 	var stringBuilder strings.Builder
 	for _, ot := range p.offsetTimelines {
-		stringBuilder.WriteString(fmt.Sprintf(" %s\n ", ot.Dump()))
+		fmt.Fprintf(&stringBuilder, " %s\n ", ot.Dump())
 	}
 	return fmt.Sprintf("%s status:%v, timelines: %s", p.entity.GetName(), p.getStatus(), stringBuilder.String())
 }

@@ -33,10 +33,10 @@ type Shutdown struct {
 
 // IsShuttingDown returns whether we can stop processing.
 func (df *DataForward) IsShuttingDown() (bool, error) {
-	df.Shutdown.rwlock.RLock()
-	defer df.Shutdown.rwlock.RUnlock()
+	df.rwlock.RLock()
+	defer df.rwlock.RUnlock()
 
-	if df.Shutdown.forceShutdown || df.Shutdown.startShutdown {
+	if df.forceShutdown || df.startShutdown {
 		return true, nil
 	}
 
@@ -52,13 +52,13 @@ func (s *Shutdown) String() string {
 
 // Stop stops the processing.
 func (df *DataForward) Stop() {
-	df.Shutdown.rwlock.Lock()
-	defer df.Shutdown.rwlock.Unlock()
-	if df.Shutdown.initiateTime.IsZero() {
-		df.Shutdown.initiateTime = time.Now()
+	df.rwlock.Lock()
+	defer df.rwlock.Unlock()
+	if df.initiateTime.IsZero() {
+		df.initiateTime = time.Now()
 	}
-	df.Shutdown.startShutdown = true
-	df.Shutdown.shutdownRequestCtr++
+	df.startShutdown = true
+	df.shutdownRequestCtr++
 	// call cancel
 	df.cancelFn()
 }
@@ -67,7 +67,7 @@ func (df *DataForward) Stop() {
 func (df *DataForward) ForceStop() {
 	// call stop (what if we have an enthusiastic shutdown that forces first)
 	df.Stop()
-	df.Shutdown.rwlock.Lock()
-	defer df.Shutdown.rwlock.Unlock()
-	df.Shutdown.forceShutdown = true
+	df.rwlock.Lock()
+	defer df.rwlock.Unlock()
+	df.forceShutdown = true
 }

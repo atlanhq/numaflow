@@ -335,7 +335,7 @@ redis_exporter`},
 			},
 		},
 	}
-	nr.AbstractPodTemplate.ApplyToPodSpec(podSpec)
+	nr.ApplyToPodSpec(podSpec)
 
 	spec := appv1.StatefulSetSpec{
 		Replicas:    &replicas,
