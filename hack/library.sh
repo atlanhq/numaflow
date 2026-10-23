@@ -29,7 +29,8 @@ function warning() {
 
 function make_fake_paths() {
   FAKE_GOPATH="$(mktemp -d)"
-  trap 'rm -rf ${FAKE_GOPATH}' EXIT
+  # The Go module cache is read-only, so make it writable before removing it.
+  trap 'chmod -R u+w ${FAKE_GOPATH} && rm -rf ${FAKE_GOPATH}' EXIT
   FAKE_REPOPATH="${FAKE_GOPATH}/src/github.com/numaproj/numaflow"
   mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${REPO_ROOT}" "${FAKE_REPOPATH}"
 }

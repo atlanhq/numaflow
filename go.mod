@@ -53,7 +53,6 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc
-	golang.org/x/net v0.60.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/tools v0.49.0
@@ -202,6 +201,7 @@ require (
 	go.mongodb.org/mongo-driver v1.15.0 // indirect
 	golang.org/x/arch v0.7.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260811182544-a038080d80e5 // indirect
 	golang.org/x/term v0.46.0 // indirect

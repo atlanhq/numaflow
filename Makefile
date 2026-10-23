@@ -258,12 +258,12 @@ manifests: crds
 	kubectl kustomize config/extensions/webhook > config/validating-webhook-install.yaml
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 
 .PHONY: lint
 lint: $(GOPATH)/bin/golangci-lint
 	go mod tidy
-	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m --enable goimports
+	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 
 .PHONY: start
 start: image

@@ -42,7 +42,7 @@ func (b *Builtin) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	mapsdk.NewServer(executor, mapsdk.WithMaxMessageSize(1024*1024*64)).Start(ctx)
+	_ = mapsdk.NewServer(executor, mapsdk.WithMaxMessageSize(1024*1024*64)).Start(ctx)
 	return nil
 }
 
