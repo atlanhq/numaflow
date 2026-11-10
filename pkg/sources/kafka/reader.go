@@ -115,15 +115,21 @@ func NewKafkaSource(ctx context.Context, vertexInstance *dfv1.VertexInstance, ha
 
 	ks.stopCh = make(chan struct{})
 
-	// create a sarama client and a cluster admin client
-	client, err := sarama.NewClient(ks.brokers, ks.config)
+	// create a sarama client and a cluster admin client. A source that starts while the brokers are restarting
+	// (a single-broker tenant, or every source pod rescheduled at once) gets a transient error here; retry it
+	// like the consume loop does instead of crashing into CrashLoopBackOff.
+	client, err := retryTransient(ctx, "create sarama client", func() (sarama.Client, error) {
+		return sarama.NewClient(ks.brokers, ks.config)
+	}, ks.logger, consumeRetryWindow)
 	if err != nil {
 		ks.logger.Panicw("Failed to create sarama client", zap.Error(err))
 	} else {
 		ks.saramaClient = client
 	}
 	// Does it require any special privileges to create a cluster admin client?
-	adminClient, err := sarama.NewClusterAdminFromClient(client)
+	adminClient, err := retryTransient(ctx, "create sarama cluster admin client", func() (sarama.ClusterAdmin, error) {
+		return sarama.NewClusterAdminFromClient(client)
+	}, ks.logger, consumeRetryWindow)
 	if err != nil {
 		if !client.Closed() {
 			_ = client.Close()
@@ -315,6 +321,38 @@ func isRetriableConsumeError(err error) bool {
 	// the coordinator broker went away abruptly (spot reclaim, OOM kill): JoinGroup gets a raw dial/read error
 	var netErr net.Error
 	return errors.As(err, &netErr) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ECONNRESET)
+}
+
+// retryTransient calls fn until it succeeds, returns a non-retriable error, ctx is done, or retriable errors
+// have lasted longer than retryWindow; it returns the last error in the last three cases. Same error
+// classification and backoff as consumeLoop.
+func retryTransient[T any](ctx context.Context, what string, fn func() (T, error), logger *zap.SugaredLogger, retryWindow time.Duration) (T, error) {
+	var failingSince time.Time
+	backoff := consumeRetryInitialBackoff
+	for {
+		v, err := fn()
+		if err == nil {
+			return v, nil
+		}
+		if !isRetriableConsumeError(err) {
+			return v, err
+		}
+		if failingSince.IsZero() {
+			failingSince = time.Now()
+		}
+		if time.Since(failingSince) >= retryWindow {
+			return v, err
+		}
+		logger.Warnw("Kafka "+what+" failed with a retriable error, retrying", zap.Error(err), zap.Duration("backoff", backoff))
+		select {
+		case <-ctx.Done():
+			return v, err
+		case <-time.After(backoff):
+		}
+		if backoff *= 2; backoff > consumeRetryMaxBackoff {
+			backoff = consumeRetryMaxBackoff
+		}
+	}
 }
 
 // consumeLoop calls consume until ctx is done. `Consume` must be called in a loop: after a server-side

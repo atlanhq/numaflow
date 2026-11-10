@@ -117,3 +117,51 @@ func TestIsRetriableConsumeError(t *testing.T) {
 		assert.False(t, isRetriableConsumeError(e), "%v should not be retriable", e)
 	}
 }
+
+// seqFn returns a func that yields the given errors in order, then succeeds with the value ok.
+func seqFn(calls *int32, seq ...error) func() (string, error) {
+	return func() (string, error) {
+		i := atomic.AddInt32(calls, 1) - 1
+		if int(i) < len(seq) {
+			return "", seq[i]
+		}
+		return "ok", nil
+	}
+}
+
+func TestRetryTransient_BrokerDownAtStartupThenUp(t *testing.T) {
+	var calls int32
+	// what a source starting while its single broker restarts gets from sarama.NewClient
+	outOfBrokers := fmt.Errorf("%w: dial tcp 10.0.0.1:9092: connect: %w", sarama.ErrOutOfBrokers, syscall.ECONNREFUSED)
+	v, err := retryTransient(context.Background(), "create sarama client", seqFn(&calls, outOfBrokers, outOfBrokers), testLogger(), time.Minute)
+	assert.NoError(t, err)
+	assert.Equal(t, "ok", v)
+	assert.Equal(t, int32(3), atomic.LoadInt32(&calls))
+}
+
+func TestRetryTransient_NonRetriableReturnsAtOnce(t *testing.T) {
+	var calls int32
+	bad := sarama.ConfigurationError("bad config")
+	_, err := retryTransient(context.Background(), "create sarama client", seqFn(&calls, bad, nil), testLogger(), time.Minute)
+	assert.ErrorIs(t, err, bad)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&calls))
+}
+
+func TestRetryTransient_GivesUpAfterTheWindow(t *testing.T) {
+	var calls int32
+	_, err := retryTransient(context.Background(), "create sarama client", func() (string, error) {
+		atomic.AddInt32(&calls, 1)
+		return "", sarama.ErrOutOfBrokers
+	}, testLogger(), 1500*time.Millisecond)
+	assert.ErrorIs(t, err, sarama.ErrOutOfBrokers)
+	assert.GreaterOrEqual(t, atomic.LoadInt32(&calls), int32(2))
+}
+
+func TestRetryTransient_StopsOnContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	var calls int32
+	_, err := retryTransient(ctx, "create sarama client", seqFn(&calls, io.EOF, io.EOF, io.EOF), testLogger(), time.Minute)
+	assert.ErrorIs(t, err, io.EOF)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&calls))
+}
