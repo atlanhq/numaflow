@@ -20,8 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -112,15 +115,21 @@ func NewKafkaSource(ctx context.Context, vertexInstance *dfv1.VertexInstance, ha
 
 	ks.stopCh = make(chan struct{})
 
-	// create a sarama client and a cluster admin client
-	client, err := sarama.NewClient(ks.brokers, ks.config)
+	// create a sarama client and a cluster admin client. A source that starts while the brokers are restarting
+	// (a single-broker tenant, or every source pod rescheduled at once) gets a transient error here; retry it
+	// like the consume loop does instead of crashing into CrashLoopBackOff.
+	client, err := retryTransient(ctx, "create sarama client", func() (sarama.Client, error) {
+		return sarama.NewClient(ks.brokers, ks.config)
+	}, ks.logger, consumeRetryWindow)
 	if err != nil {
 		ks.logger.Panicw("Failed to create sarama client", zap.Error(err))
 	} else {
 		ks.saramaClient = client
 	}
 	// Does it require any special privileges to create a cluster admin client?
-	adminClient, err := sarama.NewClusterAdminFromClient(client)
+	adminClient, err := retryTransient(ctx, "create sarama cluster admin client", func() (sarama.ClusterAdmin, error) {
+		return sarama.NewClusterAdminFromClient(client)
+	}, ks.logger, consumeRetryWindow)
 	if err != nil {
 		if !client.Closed() {
 			_ = client.Close()
@@ -281,6 +290,112 @@ func configFromOpts(yamlConfig string) (*sarama.Config, error) {
 	return config, nil
 }
 
+// consumeRetryWindow bounds how long Consume may keep failing with retriable broker errors before the source
+// gives up and crashes as before. A broker restart moves group coordinators and partition leaders: sarama
+// v1.43.3 does not retry COORDINATOR_NOT_AVAILABLE on JoinGroup (fixed upstream only in v1.61.1), so without
+// this every broker restart crashed the source and left the pod in CrashLoopBackOff for minutes.
+const consumeRetryWindow = 5 * time.Minute
+
+const (
+	consumeRetryInitialBackoff = time.Second
+	consumeRetryMaxBackoff     = 30 * time.Second
+)
+
+// isRetriableConsumeError reports whether a Consume error is a transient broker-side or network condition that
+// clears on its own once the restarted broker is back or another broker takes over.
+func isRetriableConsumeError(err error) bool {
+	var kerr sarama.KError
+	if errors.As(err, &kerr) {
+		switch kerr {
+		case sarama.ErrConsumerCoordinatorNotAvailable, sarama.ErrNotCoordinatorForConsumer,
+			sarama.ErrOffsetsLoadInProgress, sarama.ErrRebalanceInProgress,
+			sarama.ErrLeaderNotAvailable, sarama.ErrNotLeaderForPartition,
+			sarama.ErrRequestTimedOut, sarama.ErrBrokerNotAvailable, sarama.ErrNetworkException:
+			return true
+		}
+		return false
+	}
+	if errors.Is(err, sarama.ErrOutOfBrokers) || errors.Is(err, sarama.ErrNotConnected) || errors.Is(err, io.EOF) {
+		return true
+	}
+	// the coordinator broker went away abruptly (spot reclaim, OOM kill): JoinGroup gets a raw dial/read error
+	var netErr net.Error
+	return errors.As(err, &netErr) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ECONNRESET)
+}
+
+// retryTransient calls fn until it succeeds, returns a non-retriable error, ctx is done, or retriable errors
+// have lasted longer than retryWindow; it returns the last error in the last three cases. Same error
+// classification and backoff as consumeLoop.
+func retryTransient[T any](ctx context.Context, what string, fn func() (T, error), logger *zap.SugaredLogger, retryWindow time.Duration) (T, error) {
+	var failingSince time.Time
+	backoff := consumeRetryInitialBackoff
+	for {
+		v, err := fn()
+		if err == nil {
+			return v, nil
+		}
+		if !isRetriableConsumeError(err) {
+			return v, err
+		}
+		if failingSince.IsZero() {
+			failingSince = time.Now()
+		}
+		if time.Since(failingSince) >= retryWindow {
+			return v, err
+		}
+		logger.Warnw("Kafka "+what+" failed with a retriable error, retrying", zap.Error(err), zap.Duration("backoff", backoff))
+		select {
+		case <-ctx.Done():
+			return v, err
+		case <-time.After(backoff):
+		}
+		if backoff *= 2; backoff > consumeRetryMaxBackoff {
+			backoff = consumeRetryMaxBackoff
+		}
+	}
+}
+
+// consumeLoop calls consume until ctx is done. `Consume` must be called in a loop: after a server-side
+// rebalance the session is recreated to get the new claims. Retriable errors are retried with backoff for up
+// to retryWindow of consecutive failures; any other error, or one that outlasts the window, panics to let the
+// process restart, as before.
+func consumeLoop(ctx context.Context, consume func() error, logger *zap.SugaredLogger, retryWindow time.Duration) {
+	var failingSince time.Time
+	backoff := consumeRetryInitialBackoff
+	for {
+		conErr := consume()
+		if ctx.Err() != nil {
+			return
+		}
+		if conErr == nil {
+			failingSince, backoff = time.Time{}, consumeRetryInitialBackoff
+			continue
+		}
+		if errors.Is(conErr, sarama.ErrClosedConsumerGroup) {
+			return
+		}
+		if isRetriableConsumeError(conErr) {
+			if failingSince.IsZero() {
+				failingSince = time.Now()
+			}
+			if time.Since(failingSince) < retryWindow {
+				logger.Warnw("Kafka consumer failed with a retriable error, retrying", zap.Error(conErr), zap.Duration("backoff", backoff))
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(backoff):
+				}
+				if backoff *= 2; backoff > consumeRetryMaxBackoff {
+					backoff = consumeRetryMaxBackoff
+				}
+				continue
+			}
+		}
+		// Panic on errors to let it crash and restart the process
+		logger.Panicw("Kafka consumer failed with error: ", zap.Error(conErr))
+	}
+}
+
 func (ks *kafkaSource) startConsumer() {
 	consumerGroup, err := sarama.NewConsumerGroupFromClient(ks.groupName, ks.saramaClient)
 	ks.logger.Infow("creating NewConsumerGroup", zap.String("topic", ks.topic), zap.String("consumerGroupName", ks.groupName), zap.Strings("brokers", ks.brokers))
@@ -305,24 +420,9 @@ func (ks *kafkaSource) startConsumer() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for {
-			// `Consume` should be called inside an infinite loop; when a
-			// server-side re-balance happens, the consumer session will need to be
-			// recreated to get the new claims
-			if conErr := consumerGroup.Consume(ks.lifecycleCtx, []string{ks.topic}, ks.handler); conErr != nil {
-				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					return
-				}
-
-				// Panic on errors to let it crash and restart the process
-				ks.logger.Panicw("Kafka consumer failed with error: ", zap.Error(conErr))
-			}
-
-			// check if context was cancelled, signaling that the consumer should stop
-			if ks.lifecycleCtx.Err() != nil {
-				return
-			}
-		}
+		consumeLoop(ks.lifecycleCtx, func() error {
+			return consumerGroup.Consume(ks.lifecycleCtx, []string{ks.topic}, ks.handler)
+		}, ks.logger, consumeRetryWindow)
 	}()
 	wg.Wait()
 	_ = consumerGroup.Close()
